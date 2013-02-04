@@ -33,6 +33,7 @@ NAME = os.path.basename(ROOT)
 log = logging.getLogger(__name__)
 
 
+
 def _absolutify(path):
     return '%s%s/%s' % (os.environ['BASE_URL'], NAME, path.rsplit('/', 1)[0])
 
@@ -114,6 +115,9 @@ def zip_file(environ, start_response):
             for f in files:
                 full_path = os.path.join(path, f)
                 zip_path = full_path[len(ROOT) + 1:]  # +1 for the slash.
+                # everything except of manifest.webapp into the {NAME} directory
+                if zip_path != 'manifest.webapp':
+                    zip_path = '%s/%s' % (NAME, zip_path)
                 _add_file(outfile, zip_path, full_path)
 
     sio.seek(0)
@@ -126,9 +130,10 @@ def zip_file(environ, start_response):
 
 # Routing URLs.
 URLS = [
-    (r'^$', index),  # Index points to these other URLs.
-    (r'manifest.webapp$', manifest),  # The mini-manifest.
-    (r'package.zip$', zip_file),  # The zipped package.
+    # compatibility with GH pages
+    (r'%s/$' % NAME, index),  # Index points to these other URLs.
+    (r'%s/manifest.webapp$' % NAME, manifest),  # The mini-manifest.
+    (r'%s/package.zip$' % NAME, zip_file),  # The zipped package.
 ]
 
 
@@ -192,7 +197,7 @@ if __name__ == '__main__':
 
     ip = _get_local_ip() if options.addr == DEFAULT_ADDR else options.addr
     base_url = 'http://%s:%s/' % (ip, options.port)
-    log.info('Serving at %s' % base_url)
+    log.info('Serving at %s%s/' % (base_url, NAME))
     os.environ['BASE_URL'] = base_url
 
     application = ExceptionMiddleware(application)
